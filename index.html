@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Video From Any Platform</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0c;
+            --card-bg: #121318;
+            --border-color: #1f222e;
+            --primary-green: #028F46;
+            --primary-green-hover: #027338;
+            --text-main: #ffffff;
+            --text-muted: #8e95a5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 60px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 820px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 1. Header Section */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 800;
+            text-align: center;
+            line-height: 1.15;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+        }
+
+        .hero-title span.white-text {
+            color: #ffffff;
+            display: block;
+        }
+
+        .hero-title span.gradient-text {
+            background: linear-gradient(135deg, #028F46 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+        }
+
+        .hero-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 15px;
+            max-width: 620px;
+            line-height: 1.6;
+            margin-bottom: 36px;
+        }
+
+        /* Khung chứa ảnh thumbnail */
+        .thumbnail-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Ô hiển thị thời lượng ở góc dưới bên phải */
+        .duration-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: monospace, sans-serif;
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        /* 2. Search / Input Section */
+        .input-card {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 8px 8px 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-card input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 15px;
+        }
+
+        .input-card input::placeholder {
+            color: #4b5563;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+
+        .btn-icon:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-main {
+            background-color: var(--primary-green);
+            color: #ffffff;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(2, 143, 70, 0.35);
+        }
+
+        .btn-main:hover {
+            background-color: var(--primary-green-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(2, 143, 70, 0.5);
+        }
+
+        .btn-main:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 3. Preview Section */
+        .preview-card {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .preview-header {
+            display: flex;
+            gap: 20px;
+        }
+
+        .thumb-box {
+            position: relative;
+            width: 220px;
+            height: 125px;
+            flex-shrink: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #1a1d28;
+        }
+
+        .thumb-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .badge-platform {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .info-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .video-title {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            color: #f3f4f6;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-author {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .video-stats {
+            display: flex;
+            gap: 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* 4. Download Links Section */
+        .download-section {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: none;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .best-quality-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(2, 143, 70, 0.08);
+            border: 1px solid rgba(2, 143, 70, 0.25);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .format-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .format-row:last-child {
+            border-bottom: none;
+        }
+
+        .btn-download-link {
+            background: var(--primary-green);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-download-link:hover {
+            background: var(--primary-green-hover);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Header theo mẫu -->
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            Server is running · 1800+ sites supported
+        </div>
+
+        <h1 class="hero-title">
+            <span class="white-text">Download video</span>
+            <span class="gradient-text">from any platform</span>
+        </h1>
+
+        <p class="hero-subtitle">
+            Paste a video link from Douyin, TikTok, YouTube, Facebook, Instagram, Twitter/X, Bilibili or any of 1800+
+            supported sites. Fast, free, no storage.
+        </p>
+
+        <!-- Ô Nhập Link -->
+        <div class="input-card">
+            <input type="text" id="videoUrl" placeholder="https://www.facebook.com/reel/...">
+            <button class="btn-icon" onclick="pasteClipboard()" title="Dán link từ bộ nhớ tạm">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
+            <button class="btn-main" id="btnExtract" onclick="extractInfo()">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download
+            </button>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="preview-card" id="previewCard">
+            <div class="preview-header">
+                <div class="thumb-box">
+                    <img id="prevThumb" src="" alt="Thumbnail">
+                    <span class="badge-platform" id="prevPlatform">FACEBOOK</span>
+                </div>
+                <div class="info-box">
+                    <div class="video-title" id="prevTitle">Title Video</div>
+                    <div class="video-author" id="prevUploader">@author</div>
+                    <div class="video-stats">
+                        <span id="statViews"></span>
+                        <span id="statLikes"></span>
+                        <span id="statComments"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh Sách Download -->
+        <div class="download-section" id="downloadSection">
+            <div class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download Links
+            </div>
+
+            <div class="best-quality-row">
+                <div>
+                    <strong style="font-size: 15px;">Best Quality</strong>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Tự động gộp Video & Tiếng
+                        chuẩn chất lượng cao nhất</div>
+                </div>
+                <button class="btn-main" id="btnMergeHD" onclick="downloadBestHD()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download
+                </button>
+            </div>
+
+            <div id="formatList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "https://hng-my-video-downloader.onrender.com/";
+
+        async function pasteClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('videoUrl').value = text;
+            } catch (err) {
+                alert("Không thể dán từ bộ nhớ tạm!");
+            }
+        }
+
+        async function extractInfo() {
+            const url = document.getElementById('videoUrl').value.trim();
+            const btn = document.getElementById('btnExtract');
+            if (!url) return alert("Vui lòng dán link!");
+
+            btn.innerHTML = "Processing...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/extract`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Không thể lấy thông tin");
+
+                // Render Preview Card
+                document.getElementById('prevThumb').src = data.thumbnail || '';
+                document.getElementById('prevPlatform').innerText = data.platform || 'VIDEO';
+                document.getElementById('prevTitle').innerText = data.title;
+                document.getElementById('prevUploader').innerText = data.uploader;
+
+                // --- THÊM ĐOẠN NÀY ĐỂ HIỂN THỊ THỜI LƯỢNG ---
+                let durationEl = document.getElementById('prevDuration');
+                if (!durationEl) {
+                    // Nếu chưa có thẻ prevDuration trong HTML thì tự động tạo mới
+                    durationEl = document.createElement('div');
+                    durationEl.id = 'prevDuration';
+                    durationEl.className = 'duration-badge';
+                    // Thêm vào cùng khung với ảnh thumbnail (thẻ cha của prevThumb)
+                    const thumbImg = document.getElementById('prevThumb');
+                    if (thumbImg && thumbImg.parentElement) {
+                        thumbImg.parentElement.style.position = 'relative';
+                        thumbImg.parentElement.appendChild(durationEl);
+                    }
+                }
+
+                // Gán thời lượng vào ô
+                if (data.duration) {
+                    durationEl.innerText = data.duration;
+                    durationEl.style.display = 'block';
+                } else {
+                    durationEl.style.display = 'none';
+                }
+
+                // Render Formats List
+                const listContainer = document.getElementById('formatList');
+                listContainer.innerHTML = '';
+
+                data.formats.forEach(f => {
+                    const item = document.createElement('div');
+                    item.className = 'format-row';
+                    const sizeText = f.filesize_mb ? `(~${f.filesize_mb} MB)` : '';
+                    item.innerHTML = `
+                    <span><strong>${f.label}</strong> <small style="color: var(--text-muted);">${sizeText}</small></span>
+                    <a href="${f.download_url}" target="_blank" class="btn-download-link">Tải ngay</a>
+                `;
+                    listContainer.appendChild(item);
+                });
+
+                document.getElementById('previewCard').style.display = 'block';
+                document.getElementById('downloadSection').style.display = 'block';
+
+            } catch (err) {
+                alert("Lỗi: " + err.message);
+            } finally {
+                btn.innerHTML = `
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg> Download
+            `;
+                btn.disabled = false;
+            }
+        }
+
+        async function downloadBestHD() {
+            const url = document.getElementById('videoUrl').value.trim();
+            const btn = document.getElementById('btnMergeHD');
+
+            btn.innerText = "⏳ Đang ghép...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/merge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!response.ok) throw new Error("Lỗi khi ghép video");
+
+                const disposition = response.headers.get('Content-Disposition');
+                let filename = 'video.mp4';
+                if (disposition && disposition.includes('filename=')) {
+                    filename = disposition.split('filename=')[1].replace(/["']/g, '');
+                }
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+            } catch (err) {
+                alert("Lỗi tải bản gộp: " + err.message);
+            } finally {
+                btn.innerHTML = `
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg> Download
+            `;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>
