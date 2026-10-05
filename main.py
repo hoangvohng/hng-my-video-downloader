@@ -150,13 +150,13 @@ async def extract_video_info(data: URLRequest):
         }
     }
 
-if platform == "youtube":
+    if platform == "youtube":
         ydl_opts['extractor_args'] = {
             'youtube': {
                 'player_client': ['mweb', 'ios', 'android']
             }
         }
-elif platform == "douyin":
+    elif platform == "douyin":
         ydl_opts['http_headers']['Referer'] = 'https://www.douyin.com/'
 
     if cookie_file:
@@ -262,7 +262,7 @@ async def merge_and_download(data: DownloadRequest, background_tasks: Background
         }
     }
 
- if platform == "youtube":
+    if platform == "youtube":
         ydl_opts['extractor_args'] = {
             'youtube': {
                 'player_client': ['mweb', 'ios', 'android']
