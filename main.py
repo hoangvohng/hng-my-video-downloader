@@ -156,7 +156,7 @@ if platform == "youtube":
                 'player_client': ['mweb', 'ios', 'android']
             }
         }
-    elif platform == "douyin":
+elif platform == "douyin":
         ydl_opts['http_headers']['Referer'] = 'https://www.douyin.com/'
 
     if cookie_file:
