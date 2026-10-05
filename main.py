@@ -51,7 +51,7 @@ def resolve_url(url: str) -> str:
     """Giải nén link rút gọn Douyin/TikTok"""
     try:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
         }
         res = requests.get(url, allow_redirects=True, headers=headers, timeout=10)
         return res.url
@@ -69,7 +69,7 @@ def extract_platform_name(url: str) -> str:
             return "youtube"
         if "tiktok" in domain:
             return "tiktok"
-        if "facebook" in domain or "fb.watch" in domain:
+        if "facebook" in domain or "fb" in domain:
             return "facebook"
         if "instagram" in domain:
             return "instagram"
@@ -110,10 +110,7 @@ def format_duration(seconds: int) -> str:
     return f"{minutes:02d}:{secs:02d}"    
 
 def cleanup_old_files(folder_path: str, max_age_seconds: int = 900):
-    """
-    Tự động quét và xóa các file trong folder_path cũ hơn max_age_seconds.
-    Mặc định 900 giây = 15 phút.
-    """
+    """Tự động quét và xóa các file trong folder_path cũ hơn max_age_seconds."""
     try:
         now = time.time()
         for filename in os.listdir(folder_path):
@@ -137,24 +134,27 @@ class DownloadRequest(BaseModel):
 
 @app.post("/api/extract")
 async def extract_video_info(data: URLRequest):
+    # 1. Giải nén link rút gọn trước
     target_url = resolve_url(data.url)
+    
+    # 2. Nhận diện platform và lấy cookie tương ứng
     platform = extract_platform_name(target_url)
+    cookie_file = get_cookie_file_for_url(target_url)
     
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'no_color': True,
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
         }
     }
 
-    # Thêm cấu hình giả lập client Android cho YouTube để giảm tỷ lệ bị chặn IP
     if platform == "youtube":
         ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+    elif platform == "douyin":
+        ydl_opts['http_headers']['Referer'] = 'https://www.douyin.com/'
 
-    # Tự động gán file cookie phù hợp (douyin-cookies.txt hoặc youtube-cookies.txt)
-    cookie_file = get_cookie_file_for_url(target_url)
     if cookie_file:
         ydl_opts['cookiefile'] = cookie_file
 
@@ -235,8 +235,13 @@ async def extract_video_info(data: URLRequest):
 async def merge_and_download(data: DownloadRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(cleanup_old_files, DOWNLOAD_DIR, 900)
 
+    # 1. Giải nén link rút gọn trước
     target_url = resolve_url(data.url)
+    
+    # 2. Nhận diện platform và lấy cookie tương ứng
     platform = extract_platform_name(target_url)
+    cookie_file = get_cookie_file_for_url(target_url)
+    
     next_id = get_next_id()
     filename = f"{platform}_{next_id}.mp4"
     output_path = os.path.join(DOWNLOAD_DIR, filename)
@@ -249,14 +254,15 @@ async def merge_and_download(data: DownloadRequest, background_tasks: Background
         'no_warnings': True,
         'no_color': True,
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
         }
     }
 
     if platform == "youtube":
         ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+    elif platform == "douyin":
+        ydl_opts['http_headers']['Referer'] = 'https://www.douyin.com/'
 
-    cookie_file = get_cookie_file_for_url(target_url)
     if cookie_file:
         ydl_opts['cookiefile'] = cookie_file
 
