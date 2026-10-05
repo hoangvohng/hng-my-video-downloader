@@ -61,18 +61,20 @@ def resolve_url(url: str) -> str:
 def extract_platform_name(url: str) -> str:
     try:
         parsed_url = urlparse(url)
-        domain = parsed_url.netloc or parsed_url.path
-        domain = re.sub(r'^(www\.|m\.|mobile\.|vt\.|v\.)', '', domain.lower())
-        platform = domain.split('.')[0]
+        domain = parsed_url.netloc.lower()
         
-        special_cases = {
-            "youtu": "youtube",
-            "fb": "facebook",
-            "instagram": "instagram",
-            "tiktok": "tiktok",
-            "douyin": "douyin"
-        }
-        return special_cases.get(platform, platform if platform else "video")
+        if "douyin" in domain:
+            return "douyin"
+        if "youtube" in domain or "youtu.be" in domain:
+            return "youtube"
+        if "tiktok" in domain:
+            return "tiktok"
+        if "facebook" in domain or "fb.watch" in domain:
+            return "facebook"
+        if "instagram" in domain:
+            return "instagram"
+            
+        return "video"
     except Exception:
         return "video"
 
