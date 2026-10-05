@@ -23,7 +23,13 @@ app.add_middleware(
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 COUNTER_FILE = "counter.txt"
-COOKIE_FILE = os.path.join(os.path.dirname(__file__), "cookies.txt")
+
+# Cấu hình các file cookie riêng biệt theo nền tảng
+BASE_DIR = os.path.dirname(__file__)
+COOKIE_FILES = {
+    "douyin": os.path.join(BASE_DIR, "douyin-cookies.txt"),
+    "youtube": os.path.join(BASE_DIR, "youtube-cookies.txt"),
+}
 
 def get_next_id() -> str:
     count = 1
@@ -42,7 +48,7 @@ def get_next_id() -> str:
     return f"{count:010d}"
 
 def resolve_url(url: str) -> str:
-    """Giải nén link rút gọnDouyin/TikTok"""
+    """Giải nén link rút gọn Douyin/TikTok"""
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
@@ -69,6 +75,15 @@ def extract_platform_name(url: str) -> str:
         return special_cases.get(platform, platform if platform else "video")
     except Exception:
         return "video"
+
+def get_cookie_file_for_url(url: str) -> str | None:
+    """Xác định và trả về đường dẫn file cookie phù hợp theo nền tảng"""
+    platform = extract_platform_name(url)
+    cookie_path = COOKIE_FILES.get(platform)
+    
+    if cookie_path and os.path.exists(cookie_path):
+        return cookie_path
+    return None
 
 def format_count(count: int) -> str:
     if not count and count != 0:
@@ -121,6 +136,7 @@ class DownloadRequest(BaseModel):
 @app.post("/api/extract")
 async def extract_video_info(data: URLRequest):
     target_url = resolve_url(data.url)
+    platform = extract_platform_name(target_url)
     
     ydl_opts = {
         'quiet': True,
@@ -131,8 +147,14 @@ async def extract_video_info(data: URLRequest):
         }
     }
 
-    if os.path.exists(COOKIE_FILE):
-        ydl_opts['cookiefile'] = COOKIE_FILE
+    # Thêm cấu hình giả lập client Android cho YouTube để giảm tỷ lệ bị chặn IP
+    if platform == "youtube":
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+
+    # Tự động gán file cookie phù hợp (douyin-cookies.txt hoặc youtube-cookies.txt)
+    cookie_file = get_cookie_file_for_url(target_url)
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -195,7 +217,7 @@ async def extract_video_info(data: URLRequest):
                 "title": info.get('title'),
                 "thumbnail": info.get('thumbnail'),
                 "uploader": uploader,
-                "platform": extract_platform_name(target_url).upper(),
+                "platform": platform.upper(),
                 "duration": format_duration(info.get('duration')),
                 "views": format_count(info.get('view_count')),
                 "likes": format_count(info.get('like_count')),
@@ -209,7 +231,6 @@ async def extract_video_info(data: URLRequest):
 
 @app.post("/api/merge")
 async def merge_and_download(data: DownloadRequest, background_tasks: BackgroundTasks):
-    # Kích hoạt tác vụ dọn dẹp ngầm các file cũ > 15 phút (900s)
     background_tasks.add_task(cleanup_old_files, DOWNLOAD_DIR, 900)
 
     target_url = resolve_url(data.url)
@@ -230,8 +251,12 @@ async def merge_and_download(data: DownloadRequest, background_tasks: Background
         }
     }
 
-    if os.path.exists(COOKIE_FILE):
-        ydl_opts['cookiefile'] = COOKIE_FILE
+    if platform == "youtube":
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+
+    cookie_file = get_cookie_file_for_url(target_url)
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
